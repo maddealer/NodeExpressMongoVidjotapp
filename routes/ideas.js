@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
+const { ensureAuthenticated } = require("../helpers/auth");
 
 //Load Idea Model
 
@@ -8,8 +9,8 @@ require("../models/Idea");
 const Idea = mongoose.model("ideas");
 
 //Ideas route
-router.get("/", (req, res) => {
-  Idea.find({})
+router.get("/", ensureAuthenticated, (req, res) => {
+  Idea.find({ user: req.user.id })
     .sort({ date: "desc" })
     .then(ideas => {
       res.render("ideas/index", {
@@ -19,22 +20,27 @@ router.get("/", (req, res) => {
 });
 
 //Add Idea Form Route
-router.get("/add", (req, res) => {
+router.get("/add", ensureAuthenticated, (req, res) => {
   res.render("ideas/add");
 });
-
-router.get("/edit/:id", (req, res) => {
+//Edit Idea Form
+router.get("/edit/:id", ensureAuthenticated, (req, res) => {
   Idea.findOne({
     _id: req.params.id
   }).then(idea => {
-    res.render("ideas/edit", {
-      idea: idea
-    });
+    if (idea.user != req.user.id) {
+      req.flash("error_msg", "Not Authorized");
+      res.redirect("/ideas");
+    } else {
+      res.render("ideas/edit", {
+        idea: idea
+      });
+    }
   });
 });
 
 //Proccess Form
-router.post("/", (req, res) => {
+router.post("/", ensureAuthenticated, (req, res) => {
   let errors = [];
 
   if (!req.body.title) {
@@ -56,7 +62,8 @@ router.post("/", (req, res) => {
   } else {
     const newUser = {
       title: req.body.title,
-      details: req.body.details
+      details: req.body.details,
+      user: req.user.id
     };
     new Idea(newUser).save().then(idea => {
       req.flash("success_msg", "Video idea added");
@@ -66,7 +73,7 @@ router.post("/", (req, res) => {
 });
 
 //edit form proccess
-router.put("/:id", (req, res) => {
+router.put("/:id", ensureAuthenticated, (req, res) => {
   Idea.findOne({
     _id: req.params.id
   }).then(idea => {
@@ -82,7 +89,7 @@ router.put("/:id", (req, res) => {
 });
 
 //Delete Idea catch
-router.delete("/:id", (req, res) => {
+router.delete("/:id", ensureAuthenticated, (req, res) => {
   Idea.deleteOne({
     _id: req.params.id
   }).then(() => {
