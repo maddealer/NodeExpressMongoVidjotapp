@@ -25,10 +25,13 @@ mongoose.Promise = global.Promise;
 
 //Connect to mogoose
 mongoose
-  .connect(db.mongoURI, {
-    //useMongoClient: true,
-    useNewUrlParser: true
-  })
+  .connect(
+    "mongodb+srv://forento:123456ico@cluster0-i4dff.mongodb.net/test?retryWrites=true&w=majority",
+    {
+      //useMongoClient: true,
+      useNewUrlParser: true
+    }
+  )
   .then(() => {
     console.log("mongodb connected");
   })
